@@ -5,6 +5,7 @@ from sqlalchemy import (
     Integer,
     Text,
     Unicode,
+    UnicodeText,
     DateTime,
     )
 
@@ -22,30 +23,26 @@ DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
 
-#class MyModel(Base):
-#   __tablename__ = 'models'
-#   id = Column(Integer, primary_key=True)
-#   name = Column(Text)
-#   value = Column(Integer)
-
 class Entry(Base):
     __tablename__ = 'entries'
     id = Column(Integer, primary_key=True)
     title = Column(Unicode(255), nullable=False, unique=True)
-    body = Column(Text)
+    body = Column(UnicodeText())
     created = Column(DateTime(timezone=True), default=func.now())
-    edited = Column(DateTime(timezone=True), onupdate=func.now())
+    edited = Column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
-    def __init__(self, title, body):
-        self.title = title
-        self.body = body
+    @classmethod
+    def all(cls, session=None):
+        if session is None:
+            session = DBSession
+        return session.query(cls).order_by(sqlalchemy.desc(cls.created)).all()
 
-
-    def all(self):
-        pass
-
-    def by_id(self, id):
-        pass
+    @classmethod
+    def by_id(cls, id, session=None):
+        id = int(id)
+        if session is None:
+            session = DBSession
+        return session.query(cls).get(id)
     
 
-Index('index', Entry.title, unique=True, mysql_length=255)
+Index('my_index', Entry.title, unique=True, mysql_length=255)
